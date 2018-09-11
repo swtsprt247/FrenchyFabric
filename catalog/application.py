@@ -20,7 +20,7 @@ def MainpageCategories(main_page_id):
 
 
 # Route for new categories
-@app.route('/frenchyfabric/<int:main_page_id>/new/', methods=['GET', 'POST'])
+@app.route('/frenchyfabric/<int:main_page_id>/new', methods=['GET', 'POST'])
 def newCategoryItem(main_page_id):
     if request.method == 'POST':
         newItem = Categories(name=request.form['name'], main_page_id=main_page_id)
@@ -44,7 +44,7 @@ def editCategoryItem(main_page_id, categories_id):
     else:
         # USE THE RENDER_TEMPLATE FUNCTION BELOW TO SEE THE VARIABLES YOU
         # SHOULD USE IN YOUR EDITMENUITEM TEMPLATE
-        return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, item=editedItem)
+        return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i = editedItem)
 
 
 # Route to delete categories
