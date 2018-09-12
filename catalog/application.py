@@ -16,14 +16,15 @@ session = DBSession()
 def MainpageCategories(main_page_id):
     main_page = session.query(MainPage).filter_by(id=main_page_id).one()
     items = session.query(Categories).filter_by(main_page_id=main_page.id)
-    return render_template('categories.html', main_page=main_page, items = items)
+    return render_template('categories.html', main_page=main_page, items=items)
 
 
 # Route for new categories
 @app.route('/frenchyfabric/<int:main_page_id>/new', methods=['GET', 'POST'])
 def newCategoryItem(main_page_id):
     if request.method == 'POST':
-        newItem = Categories(name=request.form['name'], main_page_id=main_page_id)
+        newItem = Categories(
+            name=request.form['name'], main_page_id=main_page_id)
         session.add(newItem)
         session.commit()
         return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
@@ -44,14 +45,19 @@ def editCategoryItem(main_page_id, categories_id):
     else:
         # USE THE RENDER_TEMPLATE FUNCTION BELOW TO SEE THE VARIABLES YOU
         # SHOULD USE IN YOUR EDITMENUITEM TEMPLATE
-        return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i = editedItem)
+        return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i=editedItem)
 
 
 # Route to delete categories
-@app.route('/frenchyfabric/<int:main_page_id>/<int:categories_id>/delete/')
+@app.route('/frenchyfabric/<int:main_page_id>/<int:categories_id>/delete/', methods=['GET', 'POST'])
 def deleteCategoryItem(main_page_id, categories_id):
-    return "page to delete Category items. Get er done!!"
-
+    deleteItem = session.query(Categories).filter_by(id=categories_id).one()
+    if request.method == 'POST':
+        session.delete(deleteItem)
+        session.commit()
+        return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
+    else:
+        return render_template('DeleteCategoryItem.html', i=deleteItem)
 
 
 if __name__ == '__main__':
