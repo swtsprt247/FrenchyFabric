@@ -70,6 +70,13 @@ def MainpageCategoriesJSON(main_page_id):
         main_page_id=main_page_id).all()
     return jsonify(Categories=[i.serialize for i in items])
 
+
+#JSON Endpoint   
+@app.route('/frenchyfabric/<int:main_page_id>/category/<int:categories_id>/JSON')
+def CategoryItemJSON(main_page_id, categories_id):
+    CategoryItem = session.query(Categories).filter_by(id=categories_id).one()
+    return jsonify(CategoryItem=CategoryItem.serialize) 
+
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
