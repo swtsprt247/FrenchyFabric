@@ -27,6 +27,17 @@ class Categories(Base):
     main_page_id = Column(Integer, ForeignKey('main_page.id'))
     main_page = relationship(MainPage)
 
+# We added this serialize function to be able to send JSON objects in a
+# serializable format
+    @property
+    def serialize(self):
+
+        return {
+            'name': self.name,
+            'description': self.description,
+            'id': self.id,
+        }
+
 
 ###########insert at end of file###################
 engine = create_engine('sqlite:///frenchy_fabric.db')

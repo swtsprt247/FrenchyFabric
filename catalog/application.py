@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import MainPage, Base, Categories
@@ -62,6 +62,13 @@ def deleteCategoryItem(main_page_id, categories_id):
     else:
         return render_template('DeleteCategoryItem.html', i=deleteItem)
 
+# Making an API Endpoint (GET Request)
+@app.route('/frenchyfabric/<int:main_page_id>/category/JSON')
+def MainpageCategoriesJSON(main_page_id):
+    main_page = session.query(MainPage).filter_by(id=main_page_id).one()
+    items = session.query(Categories).filter_by(
+        main_page_id=main_page_id).all()
+    return jsonify(Categories=[i.serialize for i in items])
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
