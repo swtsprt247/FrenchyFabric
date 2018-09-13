@@ -3,9 +3,22 @@
 <body>
 
     <h1>{{main_page.name}}</h1>
-        <a href='{{url_for('newCategoryItem', main_page_id = main_page.id) }}'> Create New Item</a>
-        </br>
-        </br>
+
+    <!--MESSAGE FLASHING EXAMPLE -->
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+
+    <ul>
+        {% for message in messages %}
+        <li><strong>{{message}}</strong></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    <a href='{{url_for('newCategoryItem', main_page_id = main_page.id) }}'> Create New Item</a>
+    </br>
+    </br>
 
     {% for i in items %}
 

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import MainPage, Base, Categories
@@ -27,6 +27,7 @@ def newCategoryItem(main_page_id):
             name=request.form['name'], main_page_id=main_page_id)
         session.add(newItem)
         session.commit()
+        flash("new category created!")
         return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
     else:
         return render_template('NewCategoryItem.html', main_page_id=main_page_id)
@@ -41,6 +42,7 @@ def editCategoryItem(main_page_id, categories_id):
             editedItem.name = request.form['name']
         session.add(editedItem)
         session.commit()
+        flash("Category has been edited!")
         return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
     else:
         # USE THE RENDER_TEMPLATE FUNCTION BELOW TO SEE THE VARIABLES YOU
@@ -55,11 +57,13 @@ def deleteCategoryItem(main_page_id, categories_id):
     if request.method == 'POST':
         session.delete(deleteItem)
         session.commit()
+        flash("Category has been deleted!")
         return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
     else:
         return render_template('DeleteCategoryItem.html', i=deleteItem)
 
 
 if __name__ == '__main__':
+    app.secret_key = 'super_secret_key'
     app.debug = True
     app.run(host='0.0.0.0', port=8000)
