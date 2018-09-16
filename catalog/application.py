@@ -166,12 +166,6 @@ def showMerchandise():
 
 
 
-# @app.route('/frenchyfabric/<int:main_page_id>/')
-# def MainpageCategories(main_page_id):
-#     main_page = session.query(MainPage).filter_by(id=main_page_id).one()
-#     items = session.query(Categories).filter_by(main_page_id=main_page.id)
-#     return render_template('categories.html', main_page=main_page, items=items)
-
 
 
 # Create a new merchandise
@@ -238,25 +232,44 @@ def deleteMerchandise(main_page_id):
 
 
 
+# Show a merchandise (MainPage) Category
+@app.route('/frenchyfabric/<int:main_page_id>/')
+@app.route('/frencyfabric/<int:main_page_id>/categories/')
+def showCategories(main_page_id):
+    category = session.query(MainPage).filter_by(id=main_page_id).one()
+    creator = getUserInfo(main_page.user_id)
+    items = session.query(Categories).filter_by(main_page_id=main_page_id).all()
+    if 'username' not in login_session or creator.id != login_session['user_id']:
+        return render_template('publicCategories.html', items=items, main_page=main_page, creator=creator)
+    else:
+        return render_template('categories.html', items=items, main_page=main_page, creator=creator)
 
 
 
-
-
-
-
-# Route for new categories
+# Route for new Merchandise (MainPage) categories
 @app.route('/frenchyfabric/<int:main_page_id>/new', methods=['GET', 'POST'])
 def newCategoryItem(main_page_id):
-    if request.method == 'POST':
-        newItem = Categories(
-            name=request.form['name'], main_page_id=main_page_id)
-        session.add(newItem)
-        session.commit()
-        flash("new category created!")
-        return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
+    if 'username' not in login_session:
+        return redirect('/login')
+    restaurant = session.query(Restaurant).filter_by(id=restaurant_id).one()
+    if login_session['user_id'] != restaurant.user_id:
+        return "<script>function myFunction() {alert('You are not authorized to add menu items to this restaurant. Please create your own restaurant in order to add items.');}</script><body onload='myFunction()'>"
+        if request.method == 'POST':
+            newItem = MenuItem(name=request.form['name'], description=request.form['description'], price=request.form[
+                               'price'], course=request.form['course'], restaurant_id=restaurant_id, user_id=restaurant.user_id)
+            session.add(newItem)
+            session.commit()
+            flash('New Menu %s Item Successfully Created' % (newItem.name))
+            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
     else:
-        return render_template('NewCategoryItem.html', main_page_id=main_page_id)
+        return render_template('newmenuitem.html', restaurant_id=restaurant_id)
+
+
+
+
+
+
+
 
 
 # Route to edit categories
@@ -302,6 +315,10 @@ def MainpageCategoriesJSON(main_page_id):
 def CategoryItemJSON(main_page_id, categories_id):
     CategoryItem = session.query(Categories).filter_by(id=categories_id).one()
     return jsonify(CategoryItem=CategoryItem.serialize) 
+
+
+
+
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
