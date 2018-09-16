@@ -252,10 +252,10 @@ def newCategoryItem(main_page_id):
     if 'username' not in login_session:
         return redirect('/login')
     merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
-    if login_session['user_id'] != restaurant.user_id:
+    if login_session['user_id'] != main_page.user_id:
         return "<script>function myFunction() {alert('You are not authorized to add category items to this Merchandise.');}</script><body onload='myFunction()'>"
         if request.method == 'POST':
-            newItem = CategoryItem(name=request.form['name'], description=request.form['description'], main_page_id=main_page_id, user_id=main_page.user_id)
+            newItem = Categories(name=request.form['name'], description=request.form['description'], main_page_id=main_page_id, user_id=main_page.user_id)
             session.add(newItem)
             session.commit()
             flash('New Category %s Item Successfully Created' % (newItem.name))
@@ -266,26 +266,41 @@ def newCategoryItem(main_page_id):
 
 
 
-
-
-
-
-
 # Route to edit categories
 @app.route('/frenchyfabric/<int:main_page_id>/<int:categories_id>/edit/', methods=['GET', 'POST'])
 def editCategoryItem(main_page_id, categories_id):
+        if 'username' not in login_session:
+        return redirect('/login')
     editedItem = session.query(Categories).filter_by(id=categories_id).one()
+    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
+    if login_session['user_id'] != restaurant.user_id:
+        return "<script>function myFunction() {alert('You are not authorized to the categories for this merchandise item.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
+        if request.form['description']:
+            editedItem.description = request.form['description']
         session.add(editedItem)
         session.commit()
         flash("Category has been edited!")
-        return redirect(url_for('MainpageCategories', main_page_id=main_page_id))
+        return redirect(url_for('showCategories', main_page_id=main_page_id))
     else:
-        # USE THE RENDER_TEMPLATE FUNCTION BELOW TO SEE THE VARIABLES YOU
-        # SHOULD USE IN YOUR EDITMENUITEM TEMPLATE
         return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i=editedItem)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Route to delete categories
