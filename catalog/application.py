@@ -251,18 +251,17 @@ def showCategories(main_page_id):
 def newCategoryItem(main_page_id):
     if 'username' not in login_session:
         return redirect('/login')
-    restaurant = session.query(Restaurant).filter_by(id=restaurant_id).one()
+    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
     if login_session['user_id'] != restaurant.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to add menu items to this restaurant. Please create your own restaurant in order to add items.');}</script><body onload='myFunction()'>"
+        return "<script>function myFunction() {alert('You are not authorized to add category items to this Merchandise.');}</script><body onload='myFunction()'>"
         if request.method == 'POST':
-            newItem = MenuItem(name=request.form['name'], description=request.form['description'], price=request.form[
-                               'price'], course=request.form['course'], restaurant_id=restaurant_id, user_id=restaurant.user_id)
+            newItem = CategoryItem(name=request.form['name'], description=request.form['description'], main_page_id=main_page_id, user_id=main_page.user_id)
             session.add(newItem)
             session.commit()
-            flash('New Menu %s Item Successfully Created' % (newItem.name))
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
+            flash('New Category %s Item Successfully Created' % (newItem.name))
+            return redirect(url_for('showCategories', main_page_id=main_page_id))
     else:
-        return render_template('newmenuitem.html', restaurant_id=restaurant_id)
+        return render_template('NewCategoryItem.html', main_page_id=main_page_id)
 
 
 
