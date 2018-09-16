@@ -154,12 +154,15 @@ def gdisconnect():
 
 
 
-# Show all restaurants
-# @app.route('/')
-# @app.route('/frenchyfabric/')
-# def showRestaurants():
-#     restaurants = session.query(Restaurant).order_by(asc(Restaurant.name))
-#     return render_template('restaurants.html', restaurants=restaurants)
+# Show all merchandise
+@app.route('/')
+@app.route('/frenchyfabric/')
+def showMerchandise():
+    main_page = session.query(MainPage).order_by(asc(MainPage.name))
+    if 'username' not in login_session:
+        return render_template('publicMerchandise.html', main_page=main_page)
+    else:
+        return render_template('merchandise.html', main_page=main_page)
 
 
 
