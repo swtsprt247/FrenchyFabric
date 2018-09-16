@@ -166,11 +166,83 @@ def showMerchandise():
 
 
 
-@app.route('/frenchyfabric/<int:main_page_id>/')
-def MainpageCategories(main_page_id):
-    main_page = session.query(MainPage).filter_by(id=main_page_id).one()
-    items = session.query(Categories).filter_by(main_page_id=main_page.id)
-    return render_template('categories.html', main_page=main_page, items=items)
+# @app.route('/frenchyfabric/<int:main_page_id>/')
+# def MainpageCategories(main_page_id):
+#     main_page = session.query(MainPage).filter_by(id=main_page_id).one()
+#     items = session.query(Categories).filter_by(main_page_id=main_page.id)
+#     return render_template('categories.html', main_page=main_page, items=items)
+
+
+
+# Create a new merchandise
+@app.route('/frenchyfabric/new/', methods=['GET', 'POST'])
+def newMerchandise():
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        newMerchandise = MainPage(name=request.form['name'], user_id=login_session['user_id'])
+        session.add(newMerchandise)
+        flash('New Merchandise %s Successfully Created' % newMerchandise.name)
+        session.commit()
+        return redirect(url_for('showMerchandise'))
+    else:
+        return render_template('newMerchandise.html')
+
+
+
+@app.route('/frenchyfabric/<int:main_page_id>/edit/', methods=['GET', 'POST'])
+def editMerchandise(main_page_id):
+    editedMerchandise = session.query(MainPage).filter_by(id=main_page_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if editedMerchandise.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to edit the Merchandise. Please put in your merchandise in order to edit.');}</script><body onload='myFunction()'>"
+    if request.method == 'POST':
+        if request.form['name']:
+            editedMerchandise.name = request.form['name']
+            flash('Merchandise Successfully Edited %s' % editedMerchandise.name)
+            return redirect(url_for('showMerchandise'))
+    else:
+        return render_template('editMerchandise.html', main_pate=editedMerchandise)
+
+
+
+# Delete a Merchandise
+@app.route('/frenchyfabric/<int:main_page_id>/delete/', methods=['GET', 'POST'])
+def deleteMerchandise(main_page_id):
+    merchandiseToDelete = session.query(MainPage).filter_by(id=main_page_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if merchandiseToDelete.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to delete the merchandise. Please put in your own merchandise in order to delete.');}</script><body onload='myFunction()'>"
+    if request.method == 'POST':
+        session.delete(merchandiseToDelete)
+        flash('%s Successfully Deleted' % merchandiseToDelete.name)
+        session.commit()
+        return redirect(url_for('showMerchandise', main_page_id=main_page_id))
+    else:
+        return render_template('deleteMerchandise.html', main_page=merchandiseToDelete)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Route for new categories
