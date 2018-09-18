@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
-from database_setup import MainPage, Base, Categories
+from database_setup import MainPage, Base, Categories, User
 
 # authorization imports
 from flask import session as login_session
@@ -16,6 +16,7 @@ import requests
 
 
 app = Flask(__name__)
+
 
 # Referencing Client Secret File
 CLIENT_ID = json.loads(
@@ -259,14 +260,14 @@ def deleteMerchandise(main_page_id):
 @app.route('/frenchyfabric/<int:main_page_id>/')
 @app.route('/frencyfabric/<int:main_page_id>/categories/')
 def showCategories(main_page_id):
-    category = session.query(MainPage).filter_by(id=main_page_id).one()
+    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
     creator = getUserInfo(main_page.user_id)
     items = session.query(Categories).filter_by(
         main_page_id=main_page_id).all()
     if 'username' not in login_session or creator.id != login_session['user_id']:
-        return render_template('publicCategories.html', items=items, main_page=main_page, creator=creator)
+        return render_template('publicCategories.html', items=items, merchandise=main_page, creator=creator)
     else:
-        return render_template('categories.html', items=items, main_page=main_page, creator=creator)
+        return render_template('categories.html', items=items, merchandise=main_page, creator=creator)
 
 
 # Route for new Merchandise (MainPage) categories
@@ -274,7 +275,7 @@ def showCategories(main_page_id):
 def newCategoryItem(main_page_id):
     if 'username' not in login_session:
         return redirect('/login')
-    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
+    main_page = session.query(MainPage).filter_by(id=main_page_id).one()
     if login_session['user_id'] != main_page.user_id:
         return "<script>function myFunction() {alert('You are not authorized to add category items to this Merchandise.');}</script><body onload='myFunction()'>"
         if request.method == 'POST':
@@ -293,21 +294,21 @@ def newCategoryItem(main_page_id):
 def editCategoryItem(main_page_id, categories_id):
         if 'username' not in login_session:
             return redirect('/login')
-    editedItem = session.query(Categories).filter_by(id=categories_id).one()
-    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
-    if login_session['user_id'] != restaurant.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to the categories for this merchandise item.');}</script><body onload='myFunction()'>"
-    if request.method == 'POST':
-        if request.form['name']:
-            editedItem.name = request.form['name']
-        if request.form['description']:
-            editedItem.description = request.form['description']
-        session.add(editedItem)
-        session.commit()
-        flash("Category has been edited!")
-        return redirect(url_for('showCategories', main_page_id=main_page_id))
-    else:
-        return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i=editedItem)
+        editedItem = session.query(Categories).filter_by(id=categories_id).one()
+        merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
+        if login_session['user_id'] != main_page.user_id:
+            return "<script>function myFunction() {alert('You are not authorized to the categories for this merchandise item.');}</script><body onload='myFunction()'>"
+        if request.method == 'POST':
+            if request.form['name']:
+                editedItem.name = request.form['name']
+            if request.form['description']:
+                editedItem.description = request.form['description']
+                session.add(editedItem)
+                session.commit()
+                flash("Category has been edited!")
+                return redirect(url_for('showCategories', main_page_id=main_page_id))
+            else:
+                return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i=editedItem)
 
 
 
@@ -315,10 +316,10 @@ def editCategoryItem(main_page_id, categories_id):
 @app.route('/frenchyfabric/<int:main_page_id>/<int:categories_id>/delete/', methods=['GET', 'POST'])
 def deleteCategoryItem(main_page_id, categories_id):
     if 'username' not in login_session:
-    return redirect('/login')
+        return redirect('/login')
     itemToDelete = session.query(Categories).filter_by(id=categories_id).one()
     merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
-     if login_session['user_id'] != restaurant.user_id:
+    if login_session['user_id'] != main_page.user_id:
         return "<script>function myFunction() {alert('You are not authorized to delete categories from merchandise.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         session.delete(itemToDelete)
@@ -326,7 +327,7 @@ def deleteCategoryItem(main_page_id, categories_id):
         flash("Category has been deleted!")
         return redirect(url_for('showCategories', main_page_id=main_page_id))
     else:
-        return render_template('DeleteCategoryItem.html', i=deleteItem)
+        return render_template('DeleteCategoryItem.html', i=itemToDelete)
 
 
 
