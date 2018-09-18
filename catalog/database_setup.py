@@ -28,13 +28,23 @@ class User(Base):
 
 
 
-class MainPage(Base):
+class Merchandise(Base):
 
 
-    __tablename__ = 'main_page'
+    __tablename__ = 'merchandise'
 
     name = Column(String(80), nullable=False)
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    user = relationship(User)
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'name': self.name,
+            'id': self.id,
+        }
 
 
 class Categories(Base):
@@ -45,8 +55,10 @@ class Categories(Base):
     name = Column(String(80), nullable=False)
     id = Column(Integer, primary_key=True)
     description = Column(String(250))
-    main_page_id = Column(Integer, ForeignKey('main_page.id'))
-    main_page = relationship(MainPage)
+    merchandise_id = Column(Integer, ForeignKey('merchandise.id'))
+    user_id = Column(Integer, ForeignKey('user.id'))
+    merchandise = relationship(Merchandise)
+    user = relationship(User)
 
 # We added this serialize function to be able to send JSON objects in a
 # serializable format

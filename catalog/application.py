@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
-from database_setup import MainPage, Base, Categories, User
+from database_setup import Merchandise, Base, Categories, User
 
 # authorization imports
 from flask import session as login_session
@@ -197,11 +197,11 @@ def disconnect():
 @app.route('/')
 @app.route('/frenchyfabric/')
 def showMerchandise():
-    main_page = session.query(MainPage).order_by(asc(MainPage.name))
+    merchandise = session.query(Merchandise).order_by(asc(Merchandise.name))
     if 'username' not in login_session:
-        return render_template('publicMerchandise.html', main_page=main_page)
+        return render_template('publicMerchandise.html', merchandise=merchandise)
     else:
-        return render_template('merchandise.html', main_page=main_page)
+        return render_template('merchandise.html', merchandise=merchandise)
 
 
 # Create a new merchandise
@@ -210,8 +210,7 @@ def newMerchandise():
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
-        newMerchandise = MainPage(
-            name=request.form['name'], user_id=login_session['user_id'])
+        newMerchandise = Merchandise(name=request.form['name'], user_id=login_session['user_id'])
         session.add(newMerchandise)
         flash('New Merchandise %s Successfully Created' % newMerchandise.name)
         session.commit()
@@ -220,10 +219,9 @@ def newMerchandise():
         return render_template('newMerchandise.html')
 
 
-@app.route('/frenchyfabric/<int:main_page_id>/edit/', methods=['GET', 'POST'])
-def editMerchandise(main_page_id):
-    editedMerchandise = session.query(
-        MainPage).filter_by(id=main_page_id).one()
+@app.route('/frenchyfabric/<int:merchandise_id>/edit/', methods=['GET', 'POST'])
+def editMerchandise(merchandise_id):
+    editedMerchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
     if 'username' not in login_session:
         return redirect('/login')
     if editedMerchandise.user_id != login_session['user_id']:
@@ -239,10 +237,9 @@ def editMerchandise(main_page_id):
 
 
 # Delete a Merchandise
-@app.route('/frenchyfabric/<int:main_page_id>/delete/', methods=['GET', 'POST'])
-def deleteMerchandise(main_page_id):
-    merchandiseToDelete = session.query(
-        MainPage).filter_by(id=main_page_id).one()
+@app.route('/frenchyfabric/<int:merchandise_id>/delete/', methods=['GET', 'POST'])
+def deleteMerchandise(merchandise_id):
+    merchandiseToDelete = session.query(Merchandise).filter_by(id=merchandise_id).one()
     if 'username' not in login_session:
         return redirect('/login')
     if merchandiseToDelete.user_id != login_session['user_id']:
@@ -251,52 +248,52 @@ def deleteMerchandise(main_page_id):
         session.delete(merchandiseToDelete)
         flash('%s Successfully Deleted' % merchandiseToDelete.name)
         session.commit()
-        return redirect(url_for('showMerchandise', main_page_id=main_page_id))
+        return redirect(url_for('showMerchandise', merchandise_id=merchandise_id))
     else:
-        return render_template('deleteMerchandise.html', main_page=merchandiseToDelete)
+        return render_template('deleteMerchandise.html', merchandise=merchandiseToDelete)
 
 
-# Show a merchandise (MainPage) Category
-@app.route('/frenchyfabric/<int:main_page_id>/')
-@app.route('/frencyfabric/<int:main_page_id>/categories/')
-def showCategories(main_page_id):
-    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
-    creator = getUserInfo(main_page.user_id)
+# Show a merchandise Category
+@app.route('/frenchyfabric/<int:merchandise_id>/')
+@app.route('/frencyfabric/<int:merchandise_id>/categories/')
+def showCategories(merchandise_id):
+    merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
+    creator = getUserInfo(merchandise.user_id)
     items = session.query(Categories).filter_by(
-        main_page_id=main_page_id).all()
+        merchandise_id=merchandise_id).all()
     if 'username' not in login_session or creator.id != login_session['user_id']:
-        return render_template('publicCategories.html', items=items, merchandise=main_page, creator=creator)
+        return render_template('publicCategories.html', items=items, merchandise=merchandise, creator=creator)
     else:
-        return render_template('categories.html', items=items, merchandise=main_page, creator=creator)
+        return render_template('categories.html', items=items, merchandise=merchandise, creator=creator)
 
 
-# Route for new Merchandise (MainPage) categories
-@app.route('/frenchyfabric/<int:main_page_id>/new', methods=['GET', 'POST'])
-def newCategoryItem(main_page_id):
+# Route for new Merchandise categories
+@app.route('/frenchyfabric/<int:merchandise_id>/new', methods=['GET', 'POST'])
+def newCategoryItem(merchandise_id):
     if 'username' not in login_session:
         return redirect('/login')
-    main_page = session.query(MainPage).filter_by(id=main_page_id).one()
-    if login_session['user_id'] != main_page.user_id:
+    merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
+    if login_session['user_id'] != merchandise.user_id:
         return "<script>function myFunction() {alert('You are not authorized to add category items to this Merchandise.');}</script><body onload='myFunction()'>"
         if request.method == 'POST':
             newItem = Categories(
-                name=request.form['name'], description=request.form['description'], main_page_id=main_page_id, user_id=main_page.user_id)
+                name=request.form['name'], description=request.form['description'], merchandise_id=merchandise_id, user_id=merchandise.user_id)
             session.add(newItem)
             session.commit()
             flash('New Category %s Item Successfully Created' % (newItem.name))
-            return redirect(url_for('showCategories', main_page_id=main_page_id))
+            return redirect(url_for('showCategories', merchandise_id=merchandise_id))
     else:
-        return render_template('NewCategoryItem.html', main_page_id=main_page_id)
+        return render_template('NewCategoryItem.html', merchandise_id=merchandise_id)
 
 
 # Route to edit categories
-@app.route('/frenchyfabric/<int:main_page_id>/<int:categories_id>/edit/', methods=['GET', 'POST'])
-def editCategoryItem(main_page_id, categories_id):
+@app.route('/frenchyfabric/<int:merchandise_id>/<int:categories_id>/edit/', methods=['GET', 'POST'])
+def editCategoryItem(merchandise_id, categories_id):
         if 'username' not in login_session:
             return redirect('/login')
         editedItem = session.query(Categories).filter_by(id=categories_id).one()
-        merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
-        if login_session['user_id'] != main_page.user_id:
+        merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
+        if login_session['user_id'] != merchandise.user_id:
             return "<script>function myFunction() {alert('You are not authorized to the categories for this merchandise item.');}</script><body onload='myFunction()'>"
         if request.method == 'POST':
             if request.form['name']:
@@ -306,46 +303,47 @@ def editCategoryItem(main_page_id, categories_id):
                 session.add(editedItem)
                 session.commit()
                 flash("Category has been edited!")
-                return redirect(url_for('showCategories', main_page_id=main_page_id))
+                return redirect(url_for('showCategories', merchandise_id=merchandise_id))
             else:
-                return render_template('EditCategoryItem.html', main_page_id=main_page_id, categories_id=categories_id, i=editedItem)
+                return render_template('EditCategoryItem.html', merchandise_id=merchandise_id, categories_id=categories_id, i=editedItem)
 
 
 
 # Route to delete categories
-@app.route('/frenchyfabric/<int:main_page_id>/<int:categories_id>/delete/', methods=['GET', 'POST'])
-def deleteCategoryItem(main_page_id, categories_id):
+@app.route('/frenchyfabric/<int:merchandise_id>/<int:categories_id>/delete/', methods=['GET', 'POST'])
+def deleteCategoryItem(merchandise_id, categories_id):
     if 'username' not in login_session:
         return redirect('/login')
     itemToDelete = session.query(Categories).filter_by(id=categories_id).one()
-    merchandise = session.query(MainPage).filter_by(id=main_page_id).one()
-    if login_session['user_id'] != main_page.user_id:
+    merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
+    if login_session['user_id'] != merchandise.user_id:
         return "<script>function myFunction() {alert('You are not authorized to delete categories from merchandise.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
         flash("Category has been deleted!")
-        return redirect(url_for('showCategories', main_page_id=main_page_id))
+        return redirect(url_for('showCategories', merchandise_id=merchandise_id))
     else:
         return render_template('DeleteCategoryItem.html', i=itemToDelete)
 
 
 
 # Making an API Endpoint (GET Request)
-@app.route('/frenchyfabric/<int:main_page_id>/category/JSON')
-def MainpageCategoriesJSON(main_page_id):
-    main_page = session.query(MainPage).filter_by(id=main_page_id).one()
+@app.route('/frenchyfabric/<int:merchandise_id>/category/JSON')
+def MerchandiseCategoriesJSON(merchandise_id):
+    merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
     items = session.query(Categories).filter_by(
-        main_page_id=main_page_id).all()
+        merchandise_id=merchandise_id).all()
     return jsonify(Categories=[i.serialize for i in items])
 
 
 
 # JSON Endpoint   
-@app.route('/frenchyfabric/<int:main_page_id>/category/<int:categories_id>/JSON')
-def CategoryItemJSON(main_page_id, categories_id):
+@app.route('/frenchyfabric/<int:merchandise_id>/category/<int:categories_id>/JSON')
+def CategoryItemJSON(merchandise_id, categories_id):
     CategoryItem = session.query(Categories).filter_by(id=categories_id).one()
     return jsonify(CategoryItem=CategoryItem.serialize) 
+
 
 
 

@@ -56,7 +56,7 @@ function signInCallback(authResult) {
         if (result) {
           $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
          setTimeout(function() {
-          window.location.href = "/frenchyfabric/<int:main_page_id>/";
+          window.location.href = "/frenchyfabric/<int:merchandise_id>/";
          }, 4000);
           
       } else if (authResult['error']) {

@@ -39,12 +39,12 @@
 		</div>
 		<div class="col-md-1"></div>
 	</div>
-	{% for main_page in main_page %}
-		<a href = "{{url_for('showMerchandise', main_page_id = main_page.id)}}">
+	{% for merchandise in merchandise %}
+		<a href = "{{url_for('showMerchandise', merchandise_id = merchandise.id)}}">
 			<div class="row">
 				<div class="col-md-1"></div>
-					<div class="col-md-10 main_page-list">
-						<h3>{{main_page.name}}</h3>
+					<div class="col-md-10 merchandise-list">
+						<h3>{{merchandise.name}}</h3>
 					</div>
 				<div class="col-md-1"></div>
 			</div>
