@@ -41,6 +41,28 @@
 		</div>
 		<div class="col-md-1"></div>
 	</div>
+	<div class="row padding-top padding-bottom">
+		<div class="col-md-1"></div>
+		<div class="col-md-10 padding-none">
+			<a href="{{url_for('deleteMerchandise')}}">
+				<button class="btn btn-default" id="delete-merchandise">
+					<span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span>Delete Merchandise
+				</button>
+			</a>
+		</div>
+		<div class="col-md-1"></div>
+	</div>
+	<div class="row padding-top padding-bottom">
+		<div class="col-md-1"></div>
+		<div class="col-md-10 padding-none">
+			<a href="{{url_for('editMerchandise')}}">
+				<button class="btn btn-default" id="edit-merchandise">
+					<span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span>Edit Merchandise
+				</button>
+			</a>
+		</div>
+		<div class="col-md-1"></div>
+	</div>
 	{% for merchandise in merchandise %}
 		<a href = "{{url_for('showCategories', merchandise_id = merchandise.id)}}">
 			<div class="row">

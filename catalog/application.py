@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Merchandise, Base, Categories, User
+from functools import wraps
 
 # authorization imports
 from flask import session as login_session
@@ -32,7 +33,7 @@ session = DBSession()
 
 # Create anti-forgery state token
 @app.route('/login')
-def showLogin():
+def login():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in range(32))
     login_session['state'] = state
@@ -55,15 +56,15 @@ def gconnect():
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
-        response = make_response(
-            json.dumps('Failed to upgrade the authorization code.'), 401)
+        response = make_response(json.dumps(
+            'Failed to upgrade the authorization code.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
     # Check that the access token is valid.
     access_token = credentials.access_token
-    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
-           % access_token)
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' %
+           access_token)
     h = httplib2.Http()
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort.
@@ -75,8 +76,8 @@ def gconnect():
     # Verify that the access token is used for the intended user.
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
-        response = make_response(
-            json.dumps("Token's user ID doesn't match given user ID."), 401)
+        response = make_response(json.dumps(
+            "Token's user ID doesn't match given user ID."), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -110,6 +111,14 @@ def gconnect():
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
+    # ADD PROVIDER TO LOGIN SESSION
+    login_session['provider'] = 'google'
+
+    # see if user exists, if it doesn't make a new one
+    user_id = getUserID(data["email"])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
 
     output = ''
     output += '<h1>Welcome, '
@@ -126,7 +135,7 @@ def gconnect():
 # User Helper Functions
 def createUser(login_session):
     newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
+                   'email'])
     session.add(newUser)
     session.commit()
     user = session.query(User).filter_by(email=login_session['email']).one()
@@ -149,7 +158,7 @@ def getUserID(email):
 # DISCONNECT - login_session
 @app.route('/gdisconnect')
 def gdisconnect():
-    # Only disconnect a connected user.
+        # Only disconnect a connected user.
     access_token = login_session.get('access_token')
     if access_token is None:
         response = make_response(
@@ -159,13 +168,22 @@ def gdisconnect():
     url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
+
     if result['status'] == '200':
+        # Reset the user's sesson.
+        del login_session['access_token']
+        del login_session['gplus_id']
+        del login_session['username']
+        del login_session['email']
+        del login_session['picture']
+
         response = make_response(json.dumps('Successfully disconnected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
     else:
-        response = make_response(json.dumps(
-            'Failed to revoke token for given user.', 400))
+        # If the given token was invalid notice the user.
+        response = make_response(
+            json.dumps('Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -173,19 +191,8 @@ def gdisconnect():
 # Disconnect based on provider
 @app.route('/disconnect')
 def disconnect():
-    if 'provider' in login_session:
-        if login_session['provider'] == 'google':
-            gdisconnect()
-            del login_session['gplus_id']
-            del login_session['access_token']
-        # if login_session['provider'] == 'facebook':
-        #     fbdisconnect()
-        #     del login_session['facebook_id']
-        del login_session['username']
-        del login_session['email']
-        del login_session['picture']
-        del login_session['user_id']
-        del login_session['provider']
+    if 'username' in login_session:
+        gdisconnect()
         flash("You have successfully been logged out.")
         return redirect(url_for('showMerchandise'))
     else:
@@ -193,11 +200,26 @@ def disconnect():
         return redirect(url_for('showMerchandise'))
 
 
+# Login Required function
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' in login_session:
+            return f(*args, **kwargs)
+        else:
+            flash("You are not logged in, Please login to continue...")
+            return redirect('/login')
+    return decorated_function
+
+
+
+
 # Show all merchandise
 @app.route('/')
 @app.route('/frenchyfabric/')
 def showMerchandise():
-    merchandise = session.query(Merchandise).order_by(asc(Merchandise.name))
+    merchandise = session.query(Merchandise).all()
+    categories = session.query(Merchandise).order_by(asc(Merchandise.name))
     if 'username' not in login_session:
         return render_template('publicMerchandise.html', merchandise=merchandise)
     else:
@@ -206,11 +228,10 @@ def showMerchandise():
 
 # Create a new merchandise
 @app.route('/frenchyfabric/new/', methods=['GET', 'POST'])
-def newMerchandise():
-    if 'username' not in login_session:
-        return redirect('/login')
+@login_required
+def newMerchandise():    
     if request.method == 'POST':
-        newMerchandise = Merchandise(name=request.form['name'], user_id=login_session['user_id'])
+        newMerchandise = Merchandise(name=request.form['name'])
         session.add(newMerchandise)
         flash('New Merchandise %s Successfully Created' % newMerchandise.name)
         session.commit()
@@ -220,30 +241,24 @@ def newMerchandise():
 
 
 @app.route('/frenchyfabric/<int:merchandise_id>/edit/', methods=['GET', 'POST'])
+@login_required
 def editMerchandise(merchandise_id):
     editedMerchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
-    if 'username' not in login_session:
-        return redirect('/login')
-    if editedMerchandise.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit the Merchandise. Please put in your merchandise in order to edit.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedMerchandise.name = request.form['name']
-            flash('Merchandise Successfully Edited %s' %
-                  editedMerchandise.name)
+            flash('Merchandise Successfully Edited %s' % editedMerchandise.name)
             return redirect(url_for('showMerchandise'))
     else:
-        return render_template('editMerchandise.html', main_pate=editedMerchandise)
+        return render_template('editMerchandise.html', merchandise=editedMerchandise)
 
 
 # Delete a Merchandise
 @app.route('/frenchyfabric/<int:merchandise_id>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteMerchandise(merchandise_id):
-    merchandiseToDelete = session.query(Merchandise).filter_by(id=merchandise_id).one()
-    if 'username' not in login_session:
-        return redirect('/login')
-    if merchandiseToDelete.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete the merchandise. Please put in your own merchandise in order to delete.');}</script><body onload='myFunction()'>"
+    merchandiseToDelete = session.query(
+        Merchandise).filter_by(id=merchandise_id).one()
     if request.method == 'POST':
         session.delete(merchandiseToDelete)
         flash('%s Successfully Deleted' % merchandiseToDelete.name)
@@ -253,18 +268,18 @@ def deleteMerchandise(merchandise_id):
         return render_template('deleteMerchandise.html', merchandise=merchandiseToDelete)
 
 
-# Show a merchandise Category
+# Show items inside the category
 @app.route('/frenchyfabric/<int:merchandise_id>/')
-@app.route('/frencyfabric/<int:merchandise_id>/categories/')
+@login_required
 def showCategories(merchandise_id):
     merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
-    creator = getUserInfo(merchandise.user_id)
     items = session.query(Categories).filter_by(
         merchandise_id=merchandise_id).all()
-    if 'username' not in login_session or creator.id != login_session['user_id']:
-        return render_template('publicCategories.html', items=items, merchandise=merchandise, creator=creator)
+    if 'username' not in login_session or \
+                items.user_id != login_session['user_id']:
+        return render_template('publicCategories.html', items=items, merchandise=merchandise)
     else:
-        return render_template('categories.html', items=items, merchandise=merchandise, creator=creator)
+        return render_template('categories.html', items=items, merchandise=merchandise)
 
 
 # Route for new Merchandise categories
@@ -289,24 +304,23 @@ def newCategoryItem(merchandise_id):
 # Route to edit categories
 @app.route('/frenchyfabric/<int:merchandise_id>/<int:categories_id>/edit/', methods=['GET', 'POST'])
 def editCategoryItem(merchandise_id, categories_id):
-        if 'username' not in login_session:
-            return redirect('/login')
-        editedItem = session.query(Categories).filter_by(id=categories_id).one()
-        merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
-        if login_session['user_id'] != merchandise.user_id:
-            return "<script>function myFunction() {alert('You are not authorized to the categories for this merchandise item.');}</script><body onload='myFunction()'>"
-        if request.method == 'POST':
-            if request.form['name']:
-                editedItem.name = request.form['name']
-            if request.form['description']:
-                editedItem.description = request.form['description']
-                session.add(editedItem)
-                session.commit()
-                flash("Category has been edited!")
-                return redirect(url_for('showCategories', merchandise_id=merchandise_id))
-            else:
-                return render_template('EditCategoryItem.html', merchandise_id=merchandise_id, categories_id=categories_id, i=editedItem)
-
+    if 'username' not in login_session:
+        return redirect('/login')
+    editedItem = session.query(Categories).filter_by(id=categories_id).one()
+    merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
+    if login_session['user_id'] != merchandise.user_id:
+        return "<script>function myFunction() {alert('You are not authorized to the categories for this merchandise item.');}</script><body onload='myFunction()'>"
+    if request.method == 'POST':
+        if request.form['name']:
+            editedItem.name = request.form['name']
+        if request.form['description']:
+            editedItem.description = request.form['description']
+            session.add(editedItem)
+            session.commit()
+            flash("Category has been edited!")
+            return redirect(url_for('showCategories', merchandise_id=merchandise_id))
+        else:
+            return render_template('EditCategoryItem.html', merchandise_id=merchandise_id, categories_id=categories_id, i=editedItem)
 
 
 # Route to delete categories
@@ -327,7 +341,6 @@ def deleteCategoryItem(merchandise_id, categories_id):
         return render_template('DeleteCategoryItem.html', i=itemToDelete)
 
 
-
 # Making an API Endpoint (GET Request)
 @app.route('/frenchyfabric/<int:merchandise_id>/category/JSON')
 def MerchandiseCategoriesJSON(merchandise_id):
@@ -337,14 +350,16 @@ def MerchandiseCategoriesJSON(merchandise_id):
     return jsonify(Categories=[i.serialize for i in items])
 
 
+# JSON Endpoint
+@app.route('/frenchyfabric/JSON')
+def MerchandiseJSON():
+    merchandiselist = session.query(Merchandise).all()
+    return jsonify(merchandiselist=merchandiselist.serialize)
 
-# JSON Endpoint   
-@app.route('/frenchyfabric/<int:merchandise_id>/category/<int:categories_id>/JSON')
-def CategoryItemJSON(merchandise_id, categories_id):
-    CategoryItem = session.query(Categories).filter_by(id=categories_id).one()
-    return jsonify(CategoryItem=CategoryItem.serialize) 
-
-
+# @app.route('/frenchyfabric/<int:merchandise_id>/category/<int:categories_id>/JSON')
+# def CategoryItemJSON(merchandise_id, categories_id):
+#     CategoryItem = session.query(Categories).filter_by(id=categories_id).one()
+#     return jsonify(CategoryItem=CategoryItem.serialize)
 
 
 if __name__ == '__main__':
