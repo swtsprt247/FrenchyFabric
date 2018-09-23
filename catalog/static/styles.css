@@ -74,11 +74,11 @@ h3 {
 .glyphicon {
 	margin-right: 10px;
 }
-.top-menu {
+.top-category {
 	padding-top: 30px;
 	padding-bottom: 30px;
 }
-.top-menu p {
+.top-category p {
 	margin-bottom: 0;
 	line-height: 16px;
 }
@@ -100,7 +100,7 @@ h3 {
 }
 .banner.main {
 	height: 150px;
-	background: url("/static/top-banner.jpg");
+	background: url("/static/purse1.JPG");
 	background-position: right;
 	background-repeat: no-repeat;
 	background-size: cover;
@@ -119,7 +119,7 @@ h3 {
  .restaurant-list {
  	background-color: #F0F0F0;
  	padding: 20px;
-u }
+ }
  .restaurant-list:hover {
  	background-color: #e1e17f;
  	padding: 20px;
