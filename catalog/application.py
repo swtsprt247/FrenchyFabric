@@ -24,7 +24,7 @@ CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Frenchy Fabric Application"
 
-engine = create_engine('sqlite:///frenchy_fabric.db?check_same_thread=False')
+engine = create_engine('sqlite:///frenchy_fabric.db', connect_args={'check_same_thread': False})
 Base.metadata.bind = engine
 
 DBSession = sessionmaker(bind=engine)
@@ -345,8 +345,8 @@ def MerchandiseCategoriesJSON(merchandise_id):
 # JSON Endpoint
 @app.route('/frenchyfabric/JSON')
 def MerchandiseJSON():
-    merchandiselist = session.query(Merchandise).all()
-    return jsonify(merchandiselist=merchandiselist.serialize)
+    merchandise = session.query(Merchandise).all()
+    return jsonify(merchandise=[r.serialize for r in merchandise])
 
 # @app.route('/frenchyfabric/<int:merchandise_id>/category/<int:categories_id>/JSON')
 # def CategoryItemJSON(merchandise_id, categories_id):
