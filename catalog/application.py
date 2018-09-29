@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 from flask import Flask, render_template, request
 from flask import redirect, url_for, flash, jsonify, g
 from sqlalchemy import create_engine, asc
