@@ -1,7 +1,7 @@
 {% extends "main.html" %}
 {% block content %}
 {% include "header.html" %}
-	<div class="row divider green">
+	<div class="row divider blue">
 		<div class="col-md-12"></div>
 	</div>
 	<div class="row banner menu">
@@ -11,7 +11,7 @@
 	</div>
 	<div class="row">
 		<div class="col-md-6 col-md-offset-1 padding-top">
-			<form action="#" method = "post">
+			<form action="#" method = "POST">
 				<div class="form-group">
 					<label for="name">Name:</label>
 					<input type ="text" maxlength="50" class="form-control" name="name"placeholder="Name of the category">
@@ -21,7 +21,8 @@
 
                 </div>
                 <button type="submit" class="btn btn-default" id="submit" type="submit">
-                <span class="glyphicon glyphicon-glass" aria-hidden="true"></span>Create</button>
+				<span class="glyphicon glyphicon-glass" aria-hidden="true"></span>Create</button>
+				<a href='{{url_for('showCategories', merchandise_id = merchandise.id)}}'></a>
             </div>
         </form>
     </div>
