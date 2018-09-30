@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
+    <link href='https://fonts.googleapis.com/css?family=Advent Pro' rel='stylesheet'>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="inline login">
+      {%if 'username' not in session %}
+      <a class="button" href="{{url_for('login')}}">Login </a>
+      {% else %}
+      <a class="button" href="{{url_for('disconnect')}}">Logout </a>
+      {% endif %}
+    </div>
+    <header>
+      <h1 class="inline"><a href = "{{url_for('showMerchandise')}}" style="color:black"><i class="fas fa-home"></i>
+        Frenchy Fabric Application</a>
+      </h1>
+    </header>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul class="flash">
+      {% for message in messages %}
+      <h2><strong>{{message}}</strong></h2>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}

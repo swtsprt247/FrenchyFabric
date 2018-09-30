@@ -1,0 +1,68 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+	<div class="row divider green">
+		<div class="col-md-12"></div>
+	</div>
+	<div class="row banner menu">
+		<div class="col-md-11 col-md-offset-1 padding-none">
+			<h1>{{ merchandise.name }}
+			</h1>
+
+		</div>
+	</div>
+<!-- Messages -->
+<div class = 'flash'>
+		      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+          
+        <ul>
+        {% for message in messages %}
+            <li> <strong> {{ message }} </strong> </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+
+	<!-- Buttons -->
+</div>
+	<div class="row padding-top padding-bottom">
+		<div class="col-md-1"></div>
+		<div class="col-md-11 padding-none">
+			<a href="{{url_for('editMerchandise', merchandise_id = merchandise.id )}}">
+				<button class="btn btn-default" id="new-menu-item">
+					<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>Edit Merchandise
+				</button>
+			</a>
+			<a href="{{url_for('newCategoryItem', merchandise_id = merchandise.id )}}">
+				<button class="btn btn-default" id="new-menu-item">
+					<span class="glyphicon glyphicon-glass" aria-hidden="true"></span>Add category Item
+				</button>
+			</a>
+						<a href="{{url_for('deleteMerchandise', merchandise_id = merchandise.id )}}">
+				<button class="btn btn-default delete" id="delete-restaurant">
+					<span class="glyphicon glyphicon-trash" aria-hidden="true"></span>Delete Merchandise
+				</button>
+			</a>
+		</div>
+		<div class="col-md-7"></div>
+	</div>
+
+	<!-- Loop through Notions  -->
+	{% if items !=[] %}	
+		<div class="row">
+			<div class="col-md-7"></div>
+			<div class="col-md-7">
+					{% for i in items %}
+							<div class="menu-item">
+								<h3>{{i.name}}</h3>
+								<p>{{i.description}}</p>
+								<a href='{{url_for('editCategoryItem', merchandise_id = merchandise.id, categories_id=i.id ) }}'>Edit</a> | 
+								<a href='{{url_for('deleteCategoryItem', merchandise_id = merchandise.id, categories_id=i.id ) }}'>Delete</a>
+							</div>
+					{% endfor %}			
+			</div>
+			<div class="col-md-1"></div>
+		</div>
+	{% endif %}
+{% endblock %}
