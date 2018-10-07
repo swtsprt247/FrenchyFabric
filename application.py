@@ -1,11 +1,22 @@
 # -*- coding: utf-8 -*-
 
 
-from flask import Flask, render_template, request
-from flask import redirect, url_for, flash, jsonify, g
-from sqlalchemy import create_engine, asc
+from flask import (Flask, 
+                    render_template,
+                    request,
+                    redirect,
+                    jsonify,
+                    redirect,
+                    url_for,
+                    flash,
+                    g)
+from sqlalchemy import (create_engine, 
+                        asc)
 from sqlalchemy.orm import sessionmaker
-from database_setup import Merchandise, Base, Categories, User
+from database_setup import (Merchandise, 
+                            Base, 
+                            Categories, 
+                            User)
 from functools import wraps
 
 # authorization imports
@@ -321,10 +332,22 @@ def newCategoryItem(merchandise_id):
 def editCategoryItem(merchandise_id, categories_id):
     editedItem = session.query(Categories).filter_by(id=categories_id).one()
 
+    # make sure user is the creator
+    # if editedItem.user_id != login_session['user_id']:
+    #     return "<script>function myFunction() {alert('You are not authorized"\
+    #      "to edit this item. Please create your own item in order to edit.');"\
+    #      "window.location = '/';}</script><body onload='myFunction()''>"
+
     if request.method == 'POST':
-        if request.form['name']:
+        if request.form['name'] == "":  # if name is empty it will be unchange
+            editedItem.name = editedItem.name
+        else:
             editedItem.name = request.form['name']
-        if request.form['description']:
+        
+        # if description is empty it will return unchange
+        if request.form['description'] == "":
+            editedItem.description = editedItem.description
+        else:
             editedItem.description = request.form['description']
                 # if category is empty it will return unchange
             # if request.form['categories_id'] == "":
@@ -333,10 +356,10 @@ def editCategoryItem(merchandise_id, categories_id):
             #     editedItem.categories_id = request.form['categories_id']
             session.add(editedItem)
             session.commit()
-            flash("%s has been edited!")
+            flash("Item has been edited!")
             return redirect(url_for('showCategories',
                                     merchandise_id=merchandise_id))
-        else:
+    else:
             return render_template('EditCategoryItem.html',
                                     merchandise_id=merchandise_id,
                                     categories_id=categories_id,
@@ -349,16 +372,21 @@ def editCategoryItem(merchandise_id, categories_id):
 @login_required
 def deleteCategoryItem(merchandise_id, categories_id):
     itemToDelete = session.query(Categories).filter_by(id=categories_id).one()
-    merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
+    # merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
     if 'username' not in login_session:
-        if request.method == 'POST':
-            session.delete(itemToDelete)
-            session.commit()
-            flash("Category has been deleted!")
-            return redirect(url_for('showCategories',
-                                    merchandise_id=merchandise_id))
-        else:
-            return render_template('DeleteCategoryItem.html', i=itemToDelete)
+
+        return "<script>function myFunction() {alert('You are not authorized "\
+         "to delete this item. Please create your own item in order to delete"\
+         " .');window.location = '/';}</script><body onload='myFunction()''>"
+
+    if request.method == 'POST':
+        session.delete(itemToDelete)
+        session.commit()
+        flash("Category has been deleted!")
+        return redirect(url_for('showCategories',
+                                merchandise_id=merchandise_id))
+    else:
+        return render_template('DeleteCategoryItem.html', item=itemToDelete)
 
 
 # Making an API Endpoint (GET Request)
