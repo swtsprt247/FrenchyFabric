@@ -292,7 +292,7 @@ def deleteMerchandise(merchandise_id):
 # Show items inside the category
 @app.route('/frenchyfabric/<int:merchandise_id>/')
 @app.route('/frenchyfabric/<int:merchandise_id>/category/')
-@login_required
+# @login_required
 def showCategories(merchandise_id):
     merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
     items = session.query(Categories).filter_by(
@@ -396,6 +396,12 @@ def MerchandiseCategoriesJSON(merchandise_id):
     items = session.query(Categories).filter_by(
         merchandise_id=merchandise_id).all()
     return jsonify(Categories=[i.serialize for i in items])
+
+
+@app.route('/frenchyfabric/<int:merchandise_id>/category/<int:categories_id>/JSON')
+def categoryItemJSON(merchandise_id, categories_id):
+    Categories_Item = session.query(Categories).filter_by(id=categories_id).one()
+    return jsonify(Categories_Item=Categories_Item.serialize)
 
 
 # JSON Endpoint
