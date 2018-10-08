@@ -25,3 +25,9 @@ To Develop a modern web application that provides a list of items within a varie
 * Login by clicking the 'Login' link and logging in via Google
 * Once logged in, you will see view, edit, and delete buttons beside each item row in the catalog
 * To view the JSON output, go to `/frenchyfabric/JSON` or `/frenchyfabric/<int:merchandise_id>/category/JSON`
+
+# Visualizations
+
+![Screenshot 1](/screenshots/screenshot1.png)
+![Screenshot 2](/screenshots/screenshot2.png)
+![Screenshot 3](/screenshots/screenshot3.png)
