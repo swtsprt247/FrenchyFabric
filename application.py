@@ -1,22 +1,11 @@
 # -*- coding: utf-8 -*-
 
 
-from flask import (Flask, 
-                    render_template,
-                    request,
-                    redirect,
-                    jsonify,
-                    redirect,
-                    url_for,
-                    flash,
-                    g)
-from sqlalchemy import (create_engine, 
-                        asc)
+from flask import (Flask, render_template, request, redirect, jsonify,
+                   redirect, url_for, flash, g)
+from sqlalchemy import (create_engine, asc)
 from sqlalchemy.orm import sessionmaker
-from database_setup import (Merchandise, 
-                            Base, 
-                            Categories, 
-                            User)
+from database_setup import (Merchandise, Base, Categories, User)
 from functools import wraps
 
 # authorization imports
@@ -56,7 +45,6 @@ def login():
     return render_template('login.html', STATE=state)
 
 
-
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     if request.args.get('state') != login_session['state']:
@@ -66,25 +54,23 @@ def fbconnect():
     access_token = request.data
     print ("access token received %s " % access_token)
 
-
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
-        app_id, app_secret, access_token)
+    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (app_id, app_secret, access_token)
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
-
 
     # Use token to get user info from API
     userinfo_url = "https://graph.facebook.com/v2.8/me"
     '''
-        Due to the formatting for the result from the server token exchange we have to
-        split the token first on commas and select the first index which gives us the key : value
-        for the server access token then we split it on colons to pull out the actual token value
-        and replace the remaining quotes with nothing so that it can be used directly in the graph
-        api calls
+        Due to the formatting for the result from the server token exchange we
+        have to split the token first on commas and select the first index
+        which gives us the key : value for the server access token then we
+        split it on colons to pull out the actual token value and replace
+        the remaining quotes with nothing so that it can be used directly
+        in the graph api calls
     '''
     token = result.split(',')[0].split(':')[1].replace('"', '')
 
@@ -134,18 +120,10 @@ def fbdisconnect():
     facebook_id = login_session['facebook_id']
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
-    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id, access_token)
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
     return "you have been logged out"
-
-
-
-
-
-
-
-
 
 
 @app.route('/gconnect', methods=['POST'])
@@ -352,6 +330,8 @@ def newMerchandise():
 def editMerchandise(merchandise_id):
     editedMerchandise = session.query(
         Merchandise).filter_by(id=merchandise_id).one()
+    if editedMerchandise.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to edit Merchandise.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedMerchandise.name = request.form['name']
@@ -370,6 +350,8 @@ def editMerchandise(merchandise_id):
 def deleteMerchandise(merchandise_id):
     merchandiseToDelete = session.query(
         Merchandise).filter_by(id=merchandise_id).one()
+    if merchandiseToDelete.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to delete Merchandise.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         session.delete(merchandiseToDelete)
         flash('%s Successfully Deleted' % merchandiseToDelete.name)
@@ -423,29 +405,18 @@ def newCategoryItem(merchandise_id):
 @login_required
 def editCategoryItem(merchandise_id, categories_id):
     editedItem = session.query(Categories).filter_by(id=categories_id).one()
-
-    # make sure user is the creator
-    # if editedItem.user_id != login_session['user_id']:
-    #     return "<script>function myFunction() {alert('You are not authorized"\
-    #      "to edit this item. Please create your own item in order to edit.');"\
-    #      "window.location = '/';}</script><body onload='myFunction()''>"
-
+    if editCategoryItem.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to edit category item.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name'] == "":  # if name is empty it will be unchange
             editedItem.name = editedItem.name
         else:
             editedItem.name = request.form['name']
-        
         # if description is empty it will return unchange
         if request.form['description'] == "":
             editedItem.description = editedItem.description
         else:
             editedItem.description = request.form['description']
-                # if category is empty it will return unchange
-            # if request.form['categories_id'] == "":
-            #     editedItem.categories_id = editedItem.categories_id
-            # else:
-            #     editedItem.categories_id = request.form['categories_id']
             session.add(editedItem)
             session.commit()
             flash("Item has been edited!")
@@ -453,9 +424,9 @@ def editCategoryItem(merchandise_id, categories_id):
                                     merchandise_id=merchandise_id))
     else:
             return render_template('EditCategoryItem.html',
-                                    merchandise_id=merchandise_id,
-                                    categories_id=categories_id,
-                                    item=editedItem)
+                                   merchandise_id=merchandise_id,
+                                   categories_id=categories_id,
+                                   item=editedItem)
 
 
 # Route to delete categories
@@ -464,12 +435,8 @@ def editCategoryItem(merchandise_id, categories_id):
 @login_required
 def deleteCategoryItem(merchandise_id, categories_id):
     itemToDelete = session.query(Categories).filter_by(id=categories_id).one()
-    # merchandise = session.query(Merchandise).filter_by(id=merchandise_id).one()
-    if 'username' not in login_session:
-
-        return "<script>function myFunction() {alert('You are not authorized "\
-         "to delete this item. Please create your own item in order to delete"\
-         " .');window.location = '/';}</script><body onload='myFunction()''>"
+    if deleteCategoryItem.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to delete category item.');}</script><body onload='myFunction()'>"
 
     if request.method == 'POST':
         session.delete(itemToDelete)
